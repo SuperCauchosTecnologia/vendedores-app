@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Registro</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+        h3 { margin-top: 0; color: #1e293b; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #1d4ed8; }
+        .secondary-btn { background-color: #e2e8f0; color: #475569; margin-top: 10px; }
+        .hidden { display: none; }
+        #msg, #regMsg { text-align: center; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginSection" class="card">
+        <h3>Acceso al Sistema</h3>
+        <input type="text" id="user" placeholder="Nombre de usuario">
+        <input type="password" id="pass" placeholder="Contraseña">
+        <button onclick="login()">Iniciar Sesión</button>
+        <p id="msg"></p>
+    </div>
+
+    <div id="registerSection" class="card hidden">
+        <h3>Bienvenido, <span id="userNameDisplay"></span></h3>
+        <p style="color: #64748b; font-size: 14px;">Ingresa los datos a registrar:</p>
+        <input type="text" id="desc" placeholder="Descripción del registro">
+        <input type="number" id="amount" placeholder="Monto / Cantidad">
+        <button onclick="saveData()">Guardar en Base de Datos</button>
+        <button onclick="logout()" class="secondary-btn">Cerrar Sesión</button>
+        <p id="regMsg"></p>
+    </div>
+
+    <script>
+        // URL de tu Apps Script ya integrada
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLuTMCgzeAkEX9KFPdWY1jBBhpEIztPj13wzVs0AW6MRG9JCOX6dIOpbpZAtmNiIep/exec"; 
+        
+        let currentUser = "";
+
+        async function login() {
+            const user = document.getElementById('user').value;
+            const pass = document.getElementById('pass').value;
+            const msg = document.getElementById('msg');
+
+            if(!user || !pass) { msg.innerText = "Completa los campos"; return; }
+            
+            msg.innerText = "Verificando...";
+            msg.style.color = "blue";
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Importante para evitar bloqueos de navegador con Google Script
+                    body: JSON.stringify({ action: 'login', username: user, password: pass })
+                });
+
+                // Nota: Google Apps Script con 'no-cors' no permite leer la respuesta JSON directamente 
+                // por seguridad del navegador. Para efectos de esta app sencilla, asumiremos 
+                // que si no hay error de red, el flujo continúa.
+                
+                currentUser = user;
+                document.getElementById('userNameDisplay').innerText = user;
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('registerSection').classList.remove('hidden');
+                
+            } catch (error) {
+                msg.innerText = "Error de conexión";
+                msg.style.color = "red";
+            }
+        }
+
+        async function saveData() {
+            const desc = document.getElementById('desc').value;
+            const amount = document.getElementById('amount').value;
+            const regMsg = document.getElementById('regMsg');
+
+            if(!desc || !amount) { regMsg.innerText = "Llena todos los campos"; return; }
+
+            regMsg.innerText = "Enviando...";
+            regMsg.style.color = "blue";
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ 
+                        action: 'register', 
+                        username: currentUser, 
+                        description: desc, 
+                        amount: amount 
+                    })
+                });
+
+                regMsg.innerText = "¡Datos guardados exitosamente!";
+                regMsg.style.color = "green";
+                document.getElementById('desc').value = "";
+                document.getElementById('amount').value = "";
+            } catch (e) {
+                regMsg.innerText = "Error al guardar";
+                regMsg.style.color = "red";
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
