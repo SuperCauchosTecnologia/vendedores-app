@@ -5,120 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Vendedores | Super Lub</title>
     <style>
-        :root { --primary: #1e40af; --secondary: #64748b; --success: #16a34a; --error: #dc2626; --bg: #f1f5f9; }
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
-        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; }
-        .logo-placeholder { text-align: center; font-weight: bold; color: var(--primary); font-size: 24px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        h2 { text-align: center; color: #1e293b; margin-bottom: 1.5rem; font-size: 1.25rem; }
-        label { display: block; margin-bottom: 5px; font-size: 14px; color: #475569; font-weight: 500; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.2s; }
-        input:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
-        button { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: transform 0.1s, opacity 0.2s; }
-        button:active { transform: scale(0.98); }
+        :root { --primary: #1e40af; --success: #16a34a; --bg: #f1f5f9; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; }
+        .logo { text-align: center; font-weight: bold; color: var(--primary); font-size: 24px; margin-bottom: 20px; text-transform: uppercase; }
+        h2 { text-align: center; color: #1e293b; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; }
         .secondary-btn { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; margin-top: 10px; }
-        .hidden { display: none; }
-        #statusMsg { text-align: center; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 14px; min-height: 20px; }
+        .hidden { display: none !important; }
+        #statusMsg { text-align: center; margin-top: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="loginBox" class="card">
-        <div class="logo-placeholder">Super Lub</div>
-        <h2>Acceso de Vendedores</h2>
-        
-        <label for="userInput">Usuario</label>
-        <input type="text" id="userInput" placeholder="Ej: vargas_j" autocomplete="username">
-        
-        <label for="passInput">Contraseña</label>
-        <input type="password" id="passInput" placeholder="••••••••" autocomplete="current-password">
-        
-        <button onclick="handleLogin()">Entrar al Sistema</button>
+        <div class="logo">Super Lub</div>
+        <h2>Acceso</h2>
+        <input type="text" id="userInput" placeholder="Usuario">
+        <input type="password" id="passInput" placeholder="Contraseña">
+        <button onclick="handleLogin()">Entrar</button>
         <div id="statusMsg"></div>
     </div>
 
     <div id="registerBox" class="card hidden">
-        <div class="logo-placeholder">Super Lub</div>
-        <h2>Bienvenido, <span id="displayName" style="color: var(--primary);"></span></h2>
-        
-        <label for="descInput">Descripción de actividad</label>
-        <input type="text" id="descInput" placeholder="Ej: Venta de lubricantes - Cliente X">
-        
-        <label for="amtInput">Monto ($)</label>
-        <input type="number" id="amtInput" placeholder="0.00" step="0.01">
-        
-        <button onclick="handleSave()" style="background-color: var(--success);">Guardar en Excel</button>
-        <button onclick="location.reload()" class="secondary-btn">Cerrar Sesión</button>
+        <div class="logo">Super Lub</div>
+        <h2>Panel de: <span id="displayName" style="color: var(--primary);"></span></h2>
+        <input type="text" id="descInput" placeholder="Descripción de actividad">
+        <input type="number" id="amtInput" placeholder="Monto ($)">
+        <button onclick="handleSave()" style="background-color: var(--success);">Guardar Registro</button>
+        <button onclick="logout()" class="secondary-btn">Cerrar Sesión</button>
     </div>
 
     <script>
-        // URL ACTUALIZADA
         const API_URL = "https://script.google.com/macros/s/AKfycbw-cz9PRmgFjp0S_Psrtz88EHUAr1iorg3IPIDT02ascVu1-qZOENhCpZuMhv72pp-p/exec";
-        let activeUser = "";
+
+        // 1. COMPROBAR SESIÓN AL CARGAR LA PÁGINA
+        window.onload = function() {
+            const savedUser = localStorage.getItem("user_vendedor");
+            const savedName = localStorage.getItem("nombre_vendedor");
+
+            if (savedUser && savedName) {
+                showPanel(savedName);
+            }
+        };
 
         async function handleLogin() {
             const u = document.getElementById('userInput').value.trim();
             const p = document.getElementById('passInput').value.trim();
             const msg = document.getElementById('statusMsg');
 
-            if (!u || !p) { 
-                showStatus("Por favor, rellena todos los campos.", "var(--error)");
-                return; 
-            }
-
-            showStatus("Verificando credenciales...", "var(--primary)");
+            if (!u || !p) return;
+            msg.innerText = "Validando...";
 
             try {
-                // Validación vía GET (Pestaña "Usuarios" en tu Excel)
                 const resp = await fetch(`${API_URL}?user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
                 const result = await resp.json();
 
                 if (result.status === "success") {
-                    activeUser = u;
-                    document.getElementById('displayName').innerText = result.name;
-                    document.getElementById('loginBox').classList.add('hidden');
-                    document.getElementById('registerBox').classList.remove('hidden');
+                    // 2. GUARDAR EN EL NAVEGADOR
+                    localStorage.setItem("user_vendedor", u);
+                    localStorage.setItem("nombre_vendedor", result.name);
+                    
+                    showPanel(result.name);
                 } else {
-                    showStatus("❌ " + result.message, "var(--error)");
+                    msg.innerText = "❌ " + result.message;
+                    msg.style.color = "red";
                 }
             } catch (e) {
-                showStatus("Error de conexión. Verifica el script.", "var(--error)");
-                console.error(e);
+                msg.innerText = "Error de conexión";
             }
+        }
+
+        function showPanel(name) {
+            document.getElementById('displayName').innerText = name;
+            document.getElementById('loginBox').classList.add('hidden');
+            document.getElementById('registerBox').classList.remove('hidden');
         }
 
         async function handleSave() {
-            const desc = document.getElementById('descInput').value.trim();
-            const amt = document.getElementById('amtInput').value.trim();
-
-            if (!desc || !amt) { 
-                alert("Debes ingresar una descripción y un monto."); 
-                return; 
-            }
+            const desc = document.getElementById('descInput').value;
+            const amt = document.getElementById('amtInput').value;
+            const user = localStorage.getItem("user_vendedor");
 
             try {
-                // Envío vía POST (Pestaña "Registros" en tu Excel)
                 await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors', 
-                    body: JSON.stringify({
-                        username: activeUser,
-                        description: desc,
-                        amount: amt
-                    })
+                    mode: 'no-cors',
+                    body: JSON.stringify({ username: user, description: desc, amount: amt })
                 });
-
-                alert("✅ Registro enviado correctamente a la base de datos.");
+                alert("✅ Guardado correctamente");
                 document.getElementById('descInput').value = "";
                 document.getElementById('amtInput').value = "";
             } catch (e) {
-                alert("Error al intentar guardar los datos.");
+                alert("Error al guardar");
             }
         }
 
-        function showStatus(text, color) {
-            const msg = document.getElementById('statusMsg');
-            msg.innerText = text;
-            msg.style.color = color;
+        // 3. CERRAR SESIÓN Y LIMPIAR TODO
+        function logout() {
+            localStorage.removeItem("user_vendedor");
+            localStorage.removeItem("nombre_vendedor");
+            location.reload();
         }
     </script>
 </body>
